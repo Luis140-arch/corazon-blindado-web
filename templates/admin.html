@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Encabezado del Panel -->
+    <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200 flex justify-between items-center">
+        <div>
+            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                📊 Panel de Control Psicológico
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">Métricas en tiempo real de los triajes (PHQ-4) realizados por estudiantes.</p>
+        </div>
+        <a href="/logout" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold py-2 px-4 rounded transition">
+            Cerrar Sesión
+        </a>
+    </div>
+
+    <!-- Tarjetas de Resumen (KPIs) -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-200 text-center">
+            <p class="text-xs text-slate-500 font-semibold uppercase tracking-wide">Total Triajes</p>
+            <p class="text-3xl font-black text-blue-900 mt-2">{{ metricas.total }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-5 border border-red-100 text-center">
+            <p class="text-xs text-red-500 font-semibold uppercase tracking-wide">Riesgo Alto</p>
+            <p class="text-3xl font-black text-red-600 mt-2">{{ metricas.altos }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-5 border border-amber-100 text-center">
+            <p class="text-xs text-amber-600 font-semibold uppercase tracking-wide">Riesgo Moderado</p>
+            <p class="text-3xl font-black text-amber-500 mt-2">{{ metricas.moderados }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-5 border border-emerald-100 text-center">
+            <p class="text-xs text-emerald-600 font-semibold uppercase tracking-wide">Riesgo Leve</p>
+            <p class="text-3xl font-black text-emerald-500 mt-2">{{ metricas.leves }}</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Gráfico Chart.js -->
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200 md:col-span-1">
+            <h3 class="text-sm font-bold text-slate-800 mb-4 text-center">Distribución de Riesgo</h3>
+            <div class="relative h-48 w-full">
+                <canvas id="graficoRiesgos"></canvas>
+            </div>
+        </div>
+
+        <!-- Tabla de Registros Recientes -->
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200 md:col-span-2 overflow-x-auto">
+            <h3 class="text-sm font-bold text-slate-800 mb-4">Últimas 20 Evaluaciones</h3>
+            <table class="w-full text-left text-xs text-slate-600">
+                <thead class="bg-slate-50 border-b uppercase text-slate-500">
+                    <tr>
+                        <th class="py-3 px-4">Token</th>
+                        <th class="py-3 px-4">Demografía</th>
+                        <th class="py-3 px-4">Puntaje</th>
+                        <th class="py-3 px-4">Nivel de Riesgo</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for eval in metricas.lista_recientes %}
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-3 px-4 font-mono font-bold text-slate-800">{{ eval.token }}</td>
+                        <td class="py-3 px-4">{{ eval.rango_edad }} | {{ eval.sexo }}</td>
+                        <td class="py-3 px-4 text-center font-bold">{{ eval.puntaje_phq4 }}</td>
+                        <td class="py-3 px-4">
+                            {% if eval.nivel_riesgo == 'Alto' %}
+                                <span class="bg-red-100 text-red-700 px-2 py-1 rounded font-semibold">🔴 Alto</span>
+                            {% elif eval.nivel_riesgo == 'Moderado' %}
+                                <span class="bg-amber-100 text-amber-700 px-2 py-1 rounded font-semibold">🟠 Moderado</span>
+                            {% else %}
+                                <span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded font-semibold">🟢 Leve</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="py-6 text-center text-slate-400">No hay evaluaciones registradas aún.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Script para inicializar el gráfico con datos reales -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const ctx = document.getElementById('graficoRiesgos').getContext('2d');
+        
+        const datos = [{{ metricas.altos }}, {{ metricas.moderados }}, {{ metricas.leves }}];
+        
+        if (datos.reduce((a, b) => a + b, 0) > 0) {
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Alto', 'Moderado', 'Leve'],
+                    datasets: [{
+                        data: datos,
+                        backgroundColor: ['#ef4444', '#f59e0b', '#10b981'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12 } }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

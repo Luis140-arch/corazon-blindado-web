@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="bg-white rounded-xl shadow-lg p-6 md:p-8 border border-slate-100 space-y-6">
+
+    <!-- Tarjeta del Token Anónimo -->
+    <div class="bg-slate-800 text-white p-4 rounded-lg flex flex-col md:flex-row justify-between items-center gap-3">
+        <div>
+            <p class="text-xs text-slate-300">Tu Token de Consulta Anónima:</p>
+            <p class="text-2xl font-mono font-bold tracking-wider text-yellow-400">{{ token }}</p>
+        </div>
+        <p class="text-xs text-slate-300 max-w-xs text-center md:text-right">
+            Guarda este código para volver a consultar tus resultados o recomendaciones en el futuro sin crear cuenta.
+        </p>
+    </div>
+
+    <!-- Nivel de Riesgo Calculado / Evaluación Extendida -->
+    <div class="text-center py-4 border-b">
+        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+            {% if es_extendida %}
+                Resultados de la Evaluación Extendida (PHQ-9 / GAD-7)
+            {% else %}
+                Resultado del Triaje Inicial
+            {% endif %}
+        </p>
+        
+        {% if es_extendida %}
+            <div class="mt-3">
+                <span class="inline-block bg-red-100 text-red-800 font-bold px-4 py-2 rounded-lg text-md border border-red-200">
+                    📋 {{ nivel_riesgo }}<br>
+                    <span class="text-sm font-medium">{{ puntaje }}</span>
+                </span>
+            </div>
+        {% else %}
+            {% if nivel_riesgo == 'Leve' %}
+                <span class="inline-block bg-green-100 text-green-800 font-bold px-4 py-1.5 rounded-full text-lg mt-2">
+                    🟢 Riesgo Bajo / Leve (Puntaje: {{ puntaje }})
+                </span>
+            {% elif nivel_riesgo == 'Moderado' %}
+                <span class="inline-block bg-yellow-100 text-yellow-800 font-bold px-4 py-1.5 rounded-full text-lg mt-2">
+                    🟡 Riesgo Moderado (Puntaje: {{ puntaje }})
+                </span>
+            {% else %}
+                <span class="inline-block bg-red-100 text-red-800 font-bold px-4 py-1.5 rounded-full text-lg mt-2">
+                    🔴 Riesgo Alto / Crítico (Puntaje: {{ puntaje }})
+                </span>
+            {% endif %}
+        {% endif %}
+
+        <!-- Botón para la Evaluación Extendida (Se oculta si ya se hizo) -->
+        {% if not es_extendida and ('Moderado' in nivel_riesgo or 'Alto' in nivel_riesgo) %}
+            <div class="mt-4 pt-3 border-t border-dashed border-slate-200">
+                <p class="text-xs text-slate-600 mb-2">Para recibir una orientación personalizada más detallada, puedes completar la evaluación profunda:</p>
+                <a href="/extendida/{{ token }}" 
+                   class="inline-block bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold py-2.5 px-4 rounded-lg shadow transition duration-150">
+                    📝 Realizar Cuestionario Extendido (PHQ-9 y GAD-7)
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Pautas Asistidas por IA -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-5">
+        <h3 class="text-md font-bold text-blue-900 mb-2 flex items-center gap-2">
+            🤖 Orientación y Pautas de Autocuidado (IA)
+        </h3>
+        <p class="text-sm text-blue-800 whitespace-pre-line leading-relaxed">
+            {{ analisis_ia }}
+        </p>
+        <p class="text-[11px] text-blue-600 mt-4 border-t border-blue-200 pt-2 italic">
+            Nota: Este análisis automatizado no constituye un diagnóstico clínico formal ni reemplaza la atención psicoterapéutica presencial.
+        </p>
+    </div>
+
+    <!-- Bloque de Derivación Universal a Bienestar UCV / Línea 113 -->
+    <div class="border-t pt-4 space-y-4">
+        <h3 class="text-md font-bold text-slate-800">Canales de Apoyo Disponibles</h3>
+
+        {% if 'Alto' in nivel_riesgo or 'Moderado' in nivel_riesgo or es_extendida %}
+            <div class="bg-red-50 border-l-4 border-red-600 p-4 rounded-r">
+                <h4 class="font-bold text-red-900 text-sm">Atención Prioritaria Recomendada</h4>
+                <p class="text-xs text-red-700 mt-1 mb-3">
+                    Hemos detectado indicadores que requieren atención profesional. Te sugerimos acudir a los servicios de la universidad o comunicarte con una línea de emergencia.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <a href="https://www.ucv.edu.pe" target="_blank" 
+                       class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 px-4 rounded text-center">
+                        📅 Agendar Cita en Bienestar UCV
+                    </a>
+                    <a href="tel:113" 
+                       class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold py-2 px-4 rounded text-center">
+                        📞 Llamar Gratis a la Línea 113 MINSA
+                    </a>
+                </div>
+            </div>
+        {% else %}
+            <div class="bg-slate-50 p-4 rounded-lg border">
+                <p class="text-xs text-slate-600 mb-2">
+                    Recuerda que aunque tu riesgo sea leve, la UCV cuenta con espacios de escucha presenciales y gratuitos en el área de Psicología y "Corazón Blindado".
+                </p>
+                <a href="https://www.ucv.edu.pe" target="_blank" 
+                   class="inline-block bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold py-2 px-3 rounded">
+                    Conocer Horarios de Atención en Campus
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Botón para regresar -->
+    <div class="text-center pt-2">
+        <a href="/" class="text-xs text-slate-500 hover:text-blue-700 underline">
+            ← Volver a la página principal
+        </a>
+    </div>
+
+</div>
+{% endblock %}
