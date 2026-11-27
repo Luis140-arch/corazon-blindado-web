@@ -130,13 +130,16 @@
                 <label class="block text-xs text-slate-500 mb-2">
                     Describe brevemente qué situación o pensamiento te está afectando más esta semana: *
                 </label>
-                <textarea name="pregunta_libre" required rows="3" 
+                <textarea name="pregunta_libre" id="pregunta_libre" required rows="3" 
                     placeholder="Ejemplo: Siento mucha presión por los exámenes parciales y me cuesta concentrarme..."
                     class="w-full border rounded-lg p-3 text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                <p id="errorTextoLibre" class="hidden text-xs text-red-600 mt-1.5 font-medium">
+                    ⚠️ Por favor, describe brevemente cómo te sientes usando palabras válidas (evita ingresar solo símbolos o espacios).
+                </p>
             </div>
 
             <!-- Botón de Envío -->
-            <button type="submit" 
+            <button type="submit" id="btnEnviar"
                 class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-200">
                 Finalizar y Evaluar Triaje
             </button>
@@ -146,12 +149,39 @@
 
 </div>
 
-<!-- Script para el cronómetro del tiempo de respuesta -->
+<!-- Script para cronómetro, validación de texto NLP y prevención de doble envío -->
 <script>
     let inicioTiempo = Date.now();
-    document.getElementById('formTriaje').addEventListener('submit', function() {
+    const formTriaje = document.getElementById('formTriaje');
+    const txtLibre = document.getElementById('pregunta_libre');
+    const errorTexto = document.getElementById('errorTextoLibre');
+    const btnEnviar = document.getElementById('btnEnviar');
+
+    // Ocultar mensaje de error en cuanto el usuario corrija el texto
+    txtLibre.addEventListener('input', function() {
+        errorTexto.classList.add('hidden');
+        txtLibre.classList.remove('border-red-500', 'bg-red-50');
+    });
+
+    formTriaje.addEventListener('submit', function(e) {
+        // 1. Validar que existan al menos 3 letras reales (DEF-001)
+        const letrasValidas = (txtLibre.value.match(/[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]/g) || []).length;
+        if (letrasValidas < 3) {
+            e.preventDefault();
+            errorTexto.classList.remove('hidden');
+            txtLibre.classList.add('border-red-500', 'bg-red-50');
+            txtLibre.focus();
+            return;
+        }
+
+        // 2. Registrar tiempo de llenado
         let tiempoTotal = Math.floor((Date.now() - inicioTiempo) / 1000);
         document.getElementById('tiempo_segundos').value = tiempoTotal;
+
+        // 3. Bloquear botón y mostrar indicador de carga para evitar doble clic (DEF-002)
+        btnEnviar.disabled = true;
+        btnEnviar.classList.add('opacity-60', 'cursor-not-allowed');
+        btnEnviar.innerText = 'Analizando tus respuestas...';
     });
 </script>
 {% endblock %}

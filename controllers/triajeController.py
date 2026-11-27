@@ -5,9 +5,11 @@ import string
 import google.generativeai as genai
 from models.evaluacionDAO import guardar_evaluacion_dao
 
+
 def generar_token(longitud=8):
     caracteres = string.ascii_uppercase + string.digits
     return ''.join(random.choice(caracteres) for _ in range(longitud))
+
 
 def obtener_modelo_gemini():
     """Selecciona dinámicamente un modelo Flash compatible con generateContent"""
@@ -29,15 +31,25 @@ def obtener_modelo_gemini():
         return modelos_validos[0]
     return "models/gemini-flash-latest"
 
+
 def analizar_con_gemini(texto_libre):
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         return "Te recomendamos realizar pausas activas durante tu jornada de estudio y acudir a orientación psicológica si percibes un alto nivel de estrés."
 
-    # Sanitización previa (DEF-001: evita fallos por texto vacío o solo símbolos)
-    texto_limpio = re.sub(r'[^a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s.,¿?¡!]', '', str(texto_libre)).strip()
-    if len(texto_limpio) < 3:
-        return "Mantén hábitos saludables, organiza tus tiempos de estudio y contacta a Bienestar UCV si necesitas hablar con un profesional."
+    # Validación y sanitización previa (DEF-001: exige al menos 3 letras reales)
+    texto_str = str(texto_libre or "").strip()
+    letras_validas = re.findall(r'[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]', texto_str)
+
+    if len(letras_validas) < 3:
+        print("[GEMINI OMITIDO] Entrada sin contenido textual válido.")
+        return (
+            "No se detectó un relato de texto válido para analizar con IA. "
+            "Tu evaluación psicométrica se registró correctamente; mantén hábitos saludables "
+            "y contacta a Bienestar UCV si necesitas hablar con un profesional."
+        )
+
+    texto_limpio = re.sub(r'[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s.,¿?¡!]', '', texto_str).strip()
 
     try:
         genai.configure(api_key=api_key)
@@ -63,6 +75,7 @@ def analizar_con_gemini(texto_libre):
     except Exception as e:
         print(f"Error con Gemini API: {e}")
         return "Mantén hábitos saludables, organiza tus tiempos de estudio y contacta a Bienestar UCV si necesitas hablar con un profesional."
+
 
 def procesar_evaluacion_triaje(datos_form):
     """Calcula el riesgo, analiza con IA y coordina el guardado con la Capa Modelo"""
